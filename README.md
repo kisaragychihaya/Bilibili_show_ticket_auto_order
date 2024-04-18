@@ -6,6 +6,34 @@
 
 ### ~~不如就让我来优化(bushi)你这只抢票姬nia~ , 顺便也能当OC养 (bushi)~~
 
+## 简易使用说明
+
+----
+
+1. 进入项目的Github主页之后, 看到右边的Releases, 选择最新的那个版本号的(右边有Latest的), 点一下它.
+
+2. 加载成功之后, 找到下面的Assets 再点击 ticket_win64_1.8.0.zip 即可下载
+
+3. 下载好之后, 新建一个空白文件夹, 再把刚才那个压缩包里的文件解压到这个文件夹里
+
+4. 运行 登录B站.exe, 根据终端提示登录B站
+
+5. 登录成功之后, 运行 抢票主程序.exe, 直到显示输入购票链接的提示消息
+
+6. 电脑端进入网页: https://show.bilibili.com/platform/home.html, 然后在网页上选择好你要去的展子.
+
+7. 确定你想去的展子之后, 复制链接(&from=pc_ticketlist以前的所有内容), 粘贴到程序提示消息处.
+
+链接范例: https://show.bilibili.com/platform/detail.html?id=84096&from=pc_ticketlist,
+
+只需要复制 https://show.bilibili.com/platform/detail.html?id=84096 并粘贴即可
+
+8. 根据程序提示一步一步操作
+
+9. 直到显示开始抢票之后, 说明配置完成, 开始自动抢票, 静候抢票成功.
+
+10. 弹出验证码窗口时, 需要手动滑动验证码.
+
 ## Just-Prog: feat:添加自动生成付款二维码功能咩~
 
 <img width="273" alt="屏幕截图 2023-08-09 182035" src="https://github.com/fengx1a0/Bilibili_show_ticket_auto_order/assets/74698099/f0b2d1ad-928b-498d-9a79-f735e3f01c00">

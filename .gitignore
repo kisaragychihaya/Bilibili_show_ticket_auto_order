@@ -4,3 +4,4 @@ dist/
 __pycache__/
 .vscode/
 user_data.json
+url
