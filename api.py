@@ -376,6 +376,9 @@ class Api:
         elif data["errno"] == 10005:    # Token过期
             print("嗯, Token已过期! 正在重新获取!")
             self.tokenGet()
+        elif data["errno"] == 100051:    # Token验证码过期
+            print("嗯, 验证码已过期! 正在重新获取!")
+            self.tokenGet()
         elif data["errno"] == 100009:
             print("唉, 现在暂无余票，请耐心等候。")
         elif data["errno"] == 100001:
