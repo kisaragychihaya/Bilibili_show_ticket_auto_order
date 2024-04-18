@@ -2,3 +2,4 @@ pywin32
 selenium
 plyer
 qrcode
+pyperclip

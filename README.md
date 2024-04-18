@@ -1,6 +1,12 @@
-# Bilibili_show_ticket_auto_order
+# 抢票姬 Bilibili_show_ticket_auto_order
 
-## 截止到 2023/12/12 仍然可用
+## 由 FriendshipEnder(CN小影) 根据 Just-Prog 的改版进行二次修改咩~, **有问题赶紧去提issue!**
+
+### ps: 改来改去, 小影还是觉得自己fork一只比较好, 毕竟抢票姬也不能一直白嫖 得**作出贡献**mua~
+
+### ~~不如就让我来优化(bushi)你这只抢票姬nia~ , 顺便也能当OC养 (bushi)~~
+
+## Just-Prog: feat:添加自动生成付款二维码功能咩~
 
 <img width="273" alt="屏幕截图 2023-08-09 182035" src="https://github.com/fengx1a0/Bilibili_show_ticket_auto_order/assets/74698099/f0b2d1ad-928b-498d-9a79-f735e3f01c00">
 
@@ -8,11 +14,11 @@
 
 # 原介绍
 
-本项目核心借鉴自https://github.com/Hobr 佬
+本项目核心借鉴自https://github.com/Hobr 佬咩~
 
-Bilibili会员购抢票助手, 通过B站接口抢购目标漫展/演出
+Bilibili会员购抢票助手, 通过B站接口抢购目标漫展/演出mua~
 
-本脚本仅供学习交流使用, 不得用于商业用途, 如有侵权请联系删除
+本脚本仅供学习交流使用, 不得用于商业用途, 如有侵权请联系删除nia~
 
 <img src="images\image-20230708221711220.png" alt="image-20230708221711220" style="zoom:50%;" />
 
@@ -20,7 +26,7 @@ Bilibili会员购抢票助手, 通过B站接口抢购目标漫展/演出
 
 ## 致谢
 
-以下排名不分先后，我也不想搞的攀比起来，因为很多都是学生，原则上我是不收赞助的，大家太热情了：
+以下排名不分先后，我也不想搞的攀比起来，因为很多都是学生，原则上我是不收赞助的，大家太热情了：nia~
 
 ------------------------------------------------++++
 
@@ -57,6 +63,7 @@ ChinoHao
 神秘的miku
 Red_uncle
 czpwpq
+Just-Prog
 ```
 
 ------------------------------------------------++++

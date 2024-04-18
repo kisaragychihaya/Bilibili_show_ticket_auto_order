@@ -1,9 +1,10 @@
 import os
 import json
-import win32api,win32con
+# import win32api,win32con 移除不需要的功能 By FriendshipEnder 4/19
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from time import sleep
+import pyperclip # 新增剪贴板功能 By FriendshipEnder 4/19
 
 class dealCode():
 	def __init__(self,specificID=None):
@@ -58,7 +59,8 @@ class dealCode():
 	def mult_work(self):
 		self.init_browser()
 		self.load_cookies()
-		while True:
+		pyperclip.copy("")   # 先向剪贴板写入空白字符, 用于检测验证码是否更新了剪贴板 By FriendshipEnder 4/19
+		while pyperclip.paste() == "":   # 检测剪贴板是否更新 By FriendshipEnder 4/19
 			sleep(0.25)
 			if not os.path.exists("url"):
 				print("请在脚本目录打开此程序")
@@ -68,8 +70,9 @@ class dealCode():
 			a.close()
 			if u and u.strip() != self.u:
 				self.u = u
-				win32api.MessageBox(0,'需要滑块验证！','通知',win32con.MB_ICONWARNING)  # 改为Warning box 有声音提醒
+				# 不再用msgbox那个提醒了, 自动弹窗显示验证码 By FriendshipEnder 4/19
 				self.WebDriver.get(u)
+			# print("剪贴板: ",pyperclip.paste()) # 输出剪贴板内容 By FriendshipEnder 4/19
 
 if __name__ == '__main__':
 	dealCode().mult_work()
