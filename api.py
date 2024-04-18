@@ -373,11 +373,8 @@ class Api:
                 self.tray_notify("抢票失败", "糟糕，是张假票(同时锁定一张票，但被其他人抢走了)\n老姐立即重新抢nya~", "./ico/failed.ico", timeout=8)
         elif data["errno"] == 209002: # 统一格式  By FriendshipEnder 4/19
             print("嗯, 未获取到购买人信息")
-        elif data["errno"] == 10005:    # Token过期
+        elif "10005" in str(data["errno"]):    # Token过期
             print("嗯, Token已过期! 正在重新获取!")
-            self.tokenGet()
-        elif data["errno"] == 100051:    # Token验证码过期
-            print("嗯, 验证码已过期! 正在重新获取!")
             self.tokenGet()
         elif data["errno"] == 100009:
             print("唉, 现在暂无余票，请耐心等候。")
