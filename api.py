@@ -256,9 +256,9 @@ class Api:
                 "csrf": csrf,
                 "validate": validate
             }
-            print(_payload)
+            # print(_payload)
             _data = self._http(_url,True,urlencode(_payload))
-            print(_data)
+            # print(_data)
             if(_data["code"]==-111):
                 self.error_handle("csrf校验失败")
             elif _data["code"] == 0:
@@ -544,10 +544,13 @@ class Api:
         elif mtype == "GET_ADDRESS_LIST":
             print("\n请选择实体票发货地址(仅单地址)")
             for i in range(len(data["addr_list"])):
-                print(str(i+1) + ":" , data["addr_list"][i]["prov"]+data["addr_list"][i]["city"]+data["addr_list"][i]["area"]+data["addr_list"][i]["addr"] + " 收件人:" + data["addr_list"][i]["name"] + " " + data["addr_list"][i]["phone"])
+                print(str(i+1) + ":" , data["addr_list"][i]["prov"]+data["addr_list"][i]["city"]+data["addr_list"][i]["area"]+data["addr_list"][i]["addr"], end=" ")
+                name_private = str(data["addr_list"][i]["name"]) # 隐私保护  By FriendshipEnder 4/19
+                print("收件人:", "*"*(len(name_private)-1)+ name_private[-1], end = " ")
+                phone_private = str(data["addr_list"][i]["phone"]) # 隐私保护  By FriendshipEnder 4/19
+                print(phone_private[:3]+ "*****"+ phone_private[-3:])
             p = input("收货地址序号 >>> ").strip()
             return p
-
 
     def sendNotification(self,msg):
         data = {
@@ -570,7 +573,7 @@ class Api:
         )
 
     def start(self):
-        print("欢迎使用抢票娘 (Bilibili_show_ticket_auto_order) 版本1.8.0  只能抢B站会员购的票票哦~")
+        print("欢迎使用抢票娘 (Bilibili_show_ticket_auto_order) 版本1.8.1  只能抢B站会员购的票票哦~")
         print("是由 fengx1a0、Just-Prog 等大佬编写, 由 FriendshipEnder(CN小影) 精心优化修改后的版本")
         print("!!!!!老娘完全免费开源! 切勿外传(bushi)、切勿用于商业用途、切勿落入黄牛(nmsl)之手!!!!!")
         print("有问题去 https://github.com/fsender/Bilibili_show_ticket_auto_order 提issue 点star")

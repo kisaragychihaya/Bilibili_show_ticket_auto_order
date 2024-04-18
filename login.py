@@ -30,7 +30,7 @@ def get_login():
     WebDriver.find_element(By.CLASS_NAME, "nav-header-register").click()
     while True:
         sleep(0.1)
-        if "登录" not in WebDriver.page_source:
+        if WebDriver.page_source==None or "登录" not in WebDriver.page_source:
             break
     print("登录成功\n")
     cookies = WebDriver.get_cookies()

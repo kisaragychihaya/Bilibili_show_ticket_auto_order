@@ -34,6 +34,8 @@
 
 10. 弹出验证码窗口时, 需要手动滑动验证码.
 
+## 作者软硬件信息: Edge浏览器版本号: 123.0.2420.97 , Win11版本号: 23H2 22631.3296 , Python版本号: 3.12.3
+
 ## Just-Prog: feat:添加自动生成付款二维码功能咩~
 
 <img width="273" alt="屏幕截图 2023-08-09 182035" src="https://github.com/fengx1a0/Bilibili_show_ticket_auto_order/assets/74698099/f0b2d1ad-928b-498d-9a79-f735e3f01c00">
@@ -161,3 +163,8 @@ pass
 加入微信公众号推送消息功能
 
 加入对实体票邮寄地址的支持（需要提前添加）
+
+### 编译打包选项:
+
+pyinstaller -F main.py --hidden-import plyer.platforms.win.notification
+pyinstaller -F login.py
