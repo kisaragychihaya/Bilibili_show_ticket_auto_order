@@ -14,6 +14,7 @@ from time import sleep
 from urllib import request
 from urllib.request import Request as Reqtype
 from urllib.parse import urlencode
+from urllib.error import HTTPError
 from geetest import dealCode
 from plyer import notification as trayNotify
 import pyperclip # 新增剪贴板功能 By FriendshipEnder 4/19
@@ -85,24 +86,30 @@ class Api:
             
     def _http(self,url,j=False,data=None,raw=False):
         data = data.encode() if type(data) == type("") else data
-        # try:
-        if self.proxies and data:
-            opener = request.build_opener(request.ProxyHandler({'http':self.proxies,'https':self.proxies}))
-            res = opener.open(Reqtype(url,headers=self.headers,method="POST",data=data),timeout=120)
-        elif self.proxies and not data:
-            opener = request.build_opener(request.ProxyHandler({'http':self.proxies,'https':self.proxies}))
-            res = opener.open(Reqtype(url,headers=self.headers,method="GET"),timeout=120)
-        elif data and not self.proxies:
-            res = request.urlopen(Reqtype(url,headers=self.headers,method="POST",data=data),timeout=120)
-        else:
-            res = request.urlopen(Reqtype(url,headers=self.headers,method="GET"),timeout=120)
-        # except Exception as e:
+        try:
+            if self.proxies and data:
+                opener = request.build_opener(request.ProxyHandler({'http':self.proxies,'https':self.proxies}))
+                res = opener.open(Reqtype(url,headers=self.headers,method="POST",data=data),timeout=200)
+            elif self.proxies and not data:
+                opener = request.build_opener(request.ProxyHandler({'http':self.proxies,'https':self.proxies}))
+                res = opener.open(Reqtype(url,headers=self.headers,method="GET"),timeout=200)
+            elif data and not self.proxies:
+                res = request.urlopen(Reqtype(url,headers=self.headers,method="POST",data=data),timeout=200)
+            else:
+                res = request.urlopen(Reqtype(url,headers=self.headers,method="GET"),timeout=200)
+        except HTTPError as e:
         #     print("请求超时 请检查网络")
         #     print(e)
         #     self.error_handle("ip可能被风控。请求地址: " + url)
+            if e.code == 429:
+                print("请求太快, 或许是抢票姬触发蜀黍设定的风控咯! 5秒后重试...")
+            else:
+                print("HTTP请求响应 {} 错误! 5秒后重试...".format(e.code))
+            sleep(5)
         # print(res)
         if res.code != 200:
             self.error_handle("抢票姬的IP地址可能被风控咯，都是蜀黍干的好事!!\n可以换个WiFi或热点试试. 请求地址: " + url)
+            sleep(5)
         if j:
             return json.loads(res.read().decode("utf-8","ignore"))
         elif raw:
@@ -271,7 +278,7 @@ class Api:
         else:
             if not data["data"]:
                 timestr = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())) + ": "
-                print(timestr,"失败信息: ",data["msg"])
+                print("{}失败信息[{}]: {}".format(timestr,data["code"],data["msg"]))
                 return 1
             if data["data"]["token"]:
                 self.user_data["token"] = data["data"]["token"]
@@ -424,7 +431,7 @@ class Api:
 
     def menu(self,mtype,data=None):
         if mtype == "GET_SHOW":
-            i = input("快点给我购票链接并按回车继续! 抢票姬要帮你抢票啦! 范例https://show.bilibili.com/platform/detail.html?id=73711\n>>> ").strip()
+            i = input("快点给我购票链接并按回车继续! 抢票姬要帮你抢票啦! 范例https://show.bilibili.com/platform/detail.html?id=73711\n=>").strip()
             if "bilibili" not in i or "id" not in i:
                 self.error_handle("网址格式错误")
             return i
@@ -438,7 +445,7 @@ class Api:
             print("\n请选择场次序号并按回车继续，格式例如 1")
             for i in range(len(data["screen_list"])):
                 print(str(i+1) + ":",data["screen_list"][i]["name"])
-            date = input("场次序号 >>> ").strip()
+            date = input("场次序号 =>").strip()
             try:
                 date = int(date) - 1
                 if date not in [i for i in range(len(data["screen_list"]))]:
@@ -449,7 +456,7 @@ class Api:
             print("\n请输入票种并按回车继续，格式例如 1")
             for i in range(len(data["screen_list"][date]["ticket_list"])):
                 print(str(i+1) + ":",data["screen_list"][date]["ticket_list"][i]["desc"],"-",data["screen_list"][date]["ticket_list"][i]["price"]//100,"RMB")
-            choice = input("票种序号 >>> ").strip()
+            choice = input("票种序号 =>").strip()
             try:
                 choice = int(choice) - 1
                 if choice not in [i for i in range(len(data["screen_list"][date]["ticket_list"]))]:
@@ -477,7 +484,7 @@ class Api:
                     id_private = str(data["list"][i]["personal_id"]) # 隐私保护  By FriendshipEnder 4/19
                     print("身份证:", id_private[:4]+ "**********"+ id_private[-4:])
 
-                p = input("购票人序号 >>> ").strip()
+                p = input("购票人序号 =>").strip()
                 try:
                     t = []
                     name_private = str(data["list"][int(p)-1]["name"]) # 隐私姓名保护  By FriendshipEnder 4/19
@@ -501,7 +508,7 @@ class Api:
                     id_private = str(data["list"][i]["personal_id"]) # 隐私保护  By FriendshipEnder 4/19
                     print("身份证:", id_private[:4]+ "**********"+ id_private[-4:])
 
-                p = input("购票人序号 >>> ").strip()
+                p = input("购票人序号 =>").strip()
 
                 t = []
                 if p == "0":
@@ -529,15 +536,15 @@ class Api:
                         self.error_handle("请输入正确序号")
         elif mtype == "GET_NORMAL_INFO":
             print("\n此演出无需身份电话信息，请填写姓名和联系方式后按回车")
-            name = input("姓名 >>> ").strip()
-            tel = input("电话 >>> ").strip()
+            name = input("姓名 =>").strip()
+            tel = input("电话 =>").strip()
             if not re.match(r"^\d{9,14}$",tel):
                 self.error_handle("请输入正确格式的电话号码")
             return name, tel
 
         elif mtype == "GET_T_COUNT":
             print("\n请输入购买数量")
-            n = input(">>> ").strip()
+            n = input("=>").strip()
             if not re.match(r"^\d{1,2}$",n):
                 self.error_handle("请输入正确的数量")
             return n
@@ -549,7 +556,7 @@ class Api:
                 print("收件人:", "*"*(len(name_private)-1)+ name_private[-1], end = " ")
                 phone_private = str(data["addr_list"][i]["phone"]) # 隐私保护  By FriendshipEnder 4/19
                 print(phone_private[:3]+ "*****"+ phone_private[-3:])
-            p = input("收货地址序号 >>> ").strip()
+            p = input("收货地址序号 =>").strip()
             return p
 
     def sendNotification(self,msg):
@@ -573,7 +580,7 @@ class Api:
         )
 
     def start(self):
-        print("欢迎使用抢票娘 (Bilibili_show_ticket_auto_order) 版本1.8.1  只能抢B站会员购的票票哦~")
+        print("欢迎使用抢票娘 (Bilibili_show_ticket_auto_order) 版本1.8.2  只能抢B站会员购的票票哦~")
         print("是由 fengx1a0、Just-Prog 等大佬编写, 由 FriendshipEnder(CN小影) 精心优化修改后的版本")
         print("!!!!!老娘完全免费开源! 切勿外传(bushi)、切勿用于商业用途、切勿落入黄牛(nmsl)之手!!!!!")
         print("有问题去 https://github.com/fsender/Bilibili_show_ticket_auto_order 提issue 点star")

@@ -1,4 +1,4 @@
 proxies = None
 specificID = None
-sleep = 1.07
+sleep = 0.07
 token = None

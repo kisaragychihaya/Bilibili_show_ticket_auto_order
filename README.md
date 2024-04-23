@@ -12,7 +12,7 @@
 
 1. 进入项目的Github主页之后, 看到右边的Releases, 选择最新的那个版本号的(右边有Latest的), 点一下它.
 
-2. 加载成功之后, 找到下面的Assets 再点击 ticket_win64_1.8.0.zip 即可下载
+2. 加载成功之后, 找到下面的Assets 再点击 ticket_win64_1.8.2.zip 即可下载
 
 3. 下载好之后, 新建一个空白文件夹, 再把刚才那个压缩包里的文件解压到这个文件夹里
 
@@ -166,5 +166,7 @@ pass
 
 ### 编译打包选项:
 
+``` shell
 pyinstaller -F main.py --hidden-import plyer.platforms.win.notification
 pyinstaller -F login.py
+```
