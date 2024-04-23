@@ -1,6 +1,8 @@
-# 抢票姬 Bilibili_show_ticket_auto_order
+# 抢票姬 Bilibili_show_ticket_auto_order 1.8.3
 
 ## 由 FriendshipEnder(CN小影) 根据 Just-Prog 的改版进行二次修改咩~, **有问题赶紧去提issue!**
+
+关于版本升级: 如果您以前用过旧版本的 Bilibili_show_ticket_auto_order (由 FriendshipEnder 或者 Just-Prog 或者 fengx1a0 开发), 您可以选择将原来可用的 user_data.json 复制到新版本软件本体的所在目录 (和 抢票主程序.exe 放在一起)
 
 ### ps: 改来改去, 小影还是觉得自己fork一只比较好, 毕竟抢票姬也不能一直白嫖 得**作出贡献**mua~
 
@@ -12,7 +14,7 @@
 
 1. 进入项目的Github主页之后, 看到右边的Releases, 选择最新的那个版本号的(右边有Latest的), 点一下它.
 
-2. 加载成功之后, 找到下面的Assets 再点击 ticket_win64_1.8.2.zip 即可下载
+2. 加载成功之后, 找到下面的Assets 再点击 ticket_win64_1.8.3.zip 即可下载
 
 3. 下载好之后, 新建一个空白文件夹, 再把刚才那个压缩包里的文件解压到这个文件夹里
 
@@ -34,7 +36,11 @@
 
 10. 弹出验证码窗口时, 需要手动滑动验证码.
 
-## 作者软硬件信息: Edge浏览器版本号: 123.0.2420.97 , Win11版本号: 23H2 22631.3296 , Python版本号: 3.12.3
+## 作者软硬件信息: Edge浏览器版本号: 124.0.2478.51 , Win11版本号: 23H2 22631.3296 , Python版本号: 3.12.3
+
+关于抢票间隔: 打开config.txt文件, 找到 sleep = 项目, 然后把时间设置为你需要的抢票间隔. 单位: 秒.
+
+推荐0.1 我这边是挂了半小时不会封的, 不建议过低, 但是过高是没问题的
 
 ## Just-Prog: feat:添加自动生成付款二维码功能咩~
 
@@ -166,7 +172,6 @@ pass
 
 ### 编译打包选项:
 
-``` shell
-pyinstaller -F main.py --hidden-import plyer.platforms.win.notification
-pyinstaller -F login.py
+```shell
+pyinstaller -D main.py --hidden-import plyer.platforms.win.notification --exclude-module PyQt5 --exclude-module numpy
 ```

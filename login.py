@@ -44,7 +44,7 @@ def get_login():
     print("cookie已保存\n运行结束\n")
     with open("./user_data.json", "w") as f:
         json.dump(config, f, indent=2)
-    os.system("pause")
+    # os.system("pause")
 
 if __name__ == '__main__':
     get_login()
