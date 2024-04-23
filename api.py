@@ -106,12 +106,12 @@ class Api:
             else:
                 print("HTTP请求响应 {} 错误! 5秒后重试...".format(e.code))
             sleep(5)
-            return {"code":999999999,"errno":e.code,"data":"HTTP返回代码异常"}
+            return {"code":999999999,"errno":e.code,"msg":"HTTP返回代码异常"}
         # print(res)
         if res.code != 200:
             print("抢票姬的IP地址可能被风控咯，都是蜀黍干的好事!!\n可以换个WiFi或热点试试. 请求地址: " + url)
             sleep(5)
-            return {"code":999999999,"errno":res.code,"data":"触发风控"}
+            return {"code":999999999,"errno":res.code,"msg":"触发风控"}
         if j:
             return json.loads(res.read().decode("utf-8","ignore"))
         elif raw:
