@@ -96,14 +96,16 @@ class Api:
         try:
             if self.proxies and data:
                 opener = request.build_opener(request.ProxyHandler({'http':self.proxies,'https':self.proxies}))
-                res = opener.open(Reqtype(url,headers=self.headers,method="POST",data=data),timeout=200)
+                res = opener.open(Reqtype(url,headers=self.headers,method="POST",data=data),timeout=10)
             elif self.proxies and not data:
                 opener = request.build_opener(request.ProxyHandler({'http':self.proxies,'https':self.proxies}))
-                res = opener.open(Reqtype(url,headers=self.headers,method="GET"),timeout=200)
+                res = opener.open(Reqtype(url,headers=self.headers,method="GET"),timeout=10)
             elif data and not self.proxies:
-                res = request.urlopen(Reqtype(url,headers=self.headers,method="POST",data=data),timeout=200)
+                res = request.urlopen(Reqtype(url,headers=self.headers,method="POST",data=data),timeout=10)
             else:
-                res = request.urlopen(Reqtype(url,headers=self.headers,method="GET"),timeout=200)
+                res = request.urlopen(Reqtype(url,headers=self.headers,method="GET"),timeout=10)
+        except TimeoutError as e:
+            logger.warning(f"{url}超时")
         except HTTPError as e:
         #     print("请求超时 请检查网络")
         #     print(e)
@@ -145,6 +147,8 @@ class Api:
         # 获取订单信息
         url = "https://show.bilibili.com/api/ticket/project/get?version=134&id=" + self.user_data["project_id"] + "&project_id="+ self.user_data["project_id"]
         data = self._http(url,True)
+        with open("xt.json","w",encoding="utf-8")as f:
+            json.dump(data,f,ensure_ascii=False,indent=4)
         if not data["data"]:
             print(data)
             return 1
@@ -227,15 +231,16 @@ class Api:
         url = "https://show.bilibili.com/api/ticket/project/get?version=134&id=" + self.user_data[
             "project_id"] + "&project_id=" + self.user_data["project_id"]
         data = self._http(url, True)
-        if "售罄"in data["data"]["sale_flag"]:
-            return False,data["data"]["sale_flag"]
-        else:
-            for screen in data["data"]["screen_list"]:
-                if screen["id"] == self.user_data["screen_id"]:
-                    for ticket in screen["ticket_list"]:
-                        if ticket["id"] == self.user_data["sku_id"]:
-                            if ticket["clickable"]:
-                                return True,"有票了，下单，启动！"
+
+        for screen in data["data"]["screen_list"]:
+            if screen["id"] == self.user_data["screen_id"]:
+                for ticket in screen["ticket_list"]:
+                    if ticket["id"] == self.user_data["sku_id"]:
+                        if ticket["num"]>=1 or ticket["clickable"]:
+                            return True,f"有{ticket['num']}张票，下单，启动！"
+                        else:
+                            if "售罄" in data["data"]["sale_flag"]:
+                                return False, data["data"]["sale_flag"]
                             else:
                                 return False,"你要的票暂时没有"
 
@@ -421,9 +426,11 @@ class Api:
         elif data["errno"] == 100001:
             logger.info(timestr+": 获取频率过快或无票。")
         elif data["errno"] == 3: # 防止请慢一点的消息太多
-            logger.info("慢一点")
+            pass
         else:
             logger.warning(timestr+": 呃, 错误信息: ["+ str(data["errno"])+ "] "+str(data["msg"]), )
+            if data["errno"]==100079:
+                exit()
             # print(data)
         self.passby = (data["errno"] != 3)
         return 0
@@ -675,9 +682,9 @@ class Api:
         # 购票
         t=0
         while self.life:
-            if time.time()-t>300:
+            if time.time()-t>10:
                 t=time.time()
-                self.orderCreate()
+                self.tokenGet()
             # i = 1+i # 次数显示集成在抢票函数里了 节省输出 By FriendshipEnder 4/19
             # sleep(self.sleepTime) 随机等待时间
             # print("正在尝试第: %d次抢票"%i) 
@@ -686,12 +693,13 @@ class Api:
             cond,msg=self.checkOrderAvalible()
             logger.info(msg)
             if cond:
-                for _ in range(10):
+                for i in range(10):
+                    logger.info(f"正在抢{i}次")
                     if self.orderCreate():
                         logger.info("完成任务，正在退出！！！")
                 # open("url","w").write("https://show.bilibili.com/orderlist")
                         os.system("pause")
-                        return
+                        exit()
 
     def test(self):
         self.load_cookie()
