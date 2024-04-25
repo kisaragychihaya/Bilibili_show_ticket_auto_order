@@ -21,7 +21,7 @@ from login import get_login
 from plyer import notification as trayNotify
 import pyperclip # 新增剪贴板功能 By FriendshipEnder 4/19
 import logging
-logging.basicConfig(level=logging.INFO, format='%(name)s:%(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s-%(name)s:%(levelname)s - %(message)s',datefmt="%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)
 
 class Api:
@@ -256,7 +256,7 @@ class Api:
         payload = "count=" + str(self.user_data["user_count"]) + "&order_type=1&project_id=" + self.user_data["project_id"] + "&screen_id=" + str(self.user_data["screen_id"]) + "&sku_id=" + str(self.user_data["sku_id"]) + "&token=" + "&newRisk=true"
         # payload = "count=1&order_type=1&project_id=73710&screen_id=134762&sku_id=398405&token="       
         
-        data = self._http(url,True,payload)
+
         
         # R.I.P. 旧滑块验证
 
@@ -279,51 +279,55 @@ class Api:
         # # print(data)
         # # print(self.user_data["user_count"])
         # print("\n购买Token获取成功")
-
-        if data["errno"] == -401:
-            _url = "https://api.bilibili.com/x/gaia-vgate/v1/register"
-            _payload = urlencode(data["data"]["ga_data"]["riskParams"])
-            _data = self._http(_url,True,_payload)
-            gt = _data["data"]["geetest"]["gt"]
-            challenge = _data["data"]["geetest"]["challenge"]
-            token = _data["data"]["token"]
-            logger.warning("请在自动打开的浏览器里过验证")
-            self.tray_notify("验证码","大人, 该过验证码啦！在自动打开的浏览器窗口里","./ico/info.ico", timeout=10)
-            with open("url","w") as f:
-                f.write("file://"+ os.path.abspath('.') + "/geetest-validator/index.html?gt=" + gt + "&challenge=" + challenge)
-                f.close()
-            dealCode().mult_work() # 新增自动调用接口  By FriendshipEnder 4/19
-            validate = pyperclip.paste() # 剪贴板自动粘贴  By FriendshipEnder 4/19
-            seccode = validate + "|jordan"
-            csrf=self.getCSRF()
-            _url = "https://api.bilibili.com/x/gaia-vgate/v1/validate"
-            _payload = {
-                "challenge": challenge,
-                "token": token,
-                "seccode": seccode,
-                "csrf": csrf,
-                "validate": validate
-            }
-            # print(_payload)
-            _data = self._http(_url,True,urlencode(_payload))
-            # print(_data)
-            if(_data["code"]==-111):
-                self.error_handle("csrf校验失败")
-            elif _data["code"] == 0:
-                logger.info("[极验GeeTest认证] 继续执行")
-                return 0
-            elif _data["code"]==100001:
-                self.error_handle("验证码校验失败。")
+        while True:
+            data = self._http(url, True, payload)
+            if data["errno"] == -401:
+                _url = "https://api.bilibili.com/x/gaia-vgate/v1/register"
+                _payload = urlencode(data["data"]["ga_data"]["riskParams"])
+                _data = self._http(_url, True, _payload)
+                gt = _data["data"]["geetest"]["gt"]
+                challenge = _data["data"]["geetest"]["challenge"]
+                token = _data["data"]["token"]
+                logger.warning("请在自动打开的浏览器里过验证")
+                self.tray_notify("验证码", "大人, 该过验证码啦！在自动打开的浏览器窗口里", "./ico/info.ico", timeout=10)
+                with open("url", "w") as f:
+                    f.write("file://" + os.path.abspath(
+                        '.') + "/geetest-validator/index.html?gt=" + gt + "&challenge=" + challenge)
+                    f.close()
+                dealCode().mult_work()  # 新增自动调用接口  By FriendshipEnder 4/19
+                validate = pyperclip.paste()  # 剪贴板自动粘贴  By FriendshipEnder 4/19
+                seccode = validate + "|jordan"
+                csrf = self.getCSRF()
+                _url = "https://api.bilibili.com/x/gaia-vgate/v1/validate"
+                _payload = {
+                    "challenge": challenge,
+                    "token": token,
+                    "seccode": seccode,
+                    "csrf": csrf,
+                    "validate": validate
+                }
+                # print(_payload)
+                _data = self._http(_url, True, urlencode(_payload))
+                # print(_data)
+                if (_data["code"] == -111):
+                    self.error_handle("csrf校验失败")
+                elif _data["code"] == 0:
+                    logger.info("[极验GeeTest认证] 继续执行")
+                    return 0
+                elif _data["code"] == 100001:
+                    logger.error("验证码校验失败。")
+                    continue
+                else:
+                    logger.error("极验GeeTest验证失败。")
+                    continue
             else:
-                self.error_handle("极验GeeTest验证失败。")
-        else:
-            if not data["data"]:
-                timestr = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())) + ": "
-                logger.error("{}失败信息[{}]: {}".format(timestr,data["code"],data["msg"]))
-                return 1
-            if data["data"]["token"]:
-                self.user_data["token"] = data["data"]["token"]
-        return 0
+                if not data["data"]:
+                    timestr = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + ": "
+                    logger.error("{}失败信息[{}]: {}".format(timestr, data["code"], data["msg"]))
+                    return 1
+                if data["data"]["token"]:
+                    self.user_data["token"] = data["data"]["token"]
+            return 0
 
     def orderCreate(self):
         # 创建订单
@@ -506,24 +510,31 @@ class Api:
             print("\n请选择场次序号并按回车继续，格式例如 1")
             for i in range(len(data["screen_list"])):
                 print(str(i+1) + ":",data["screen_list"][i]["name"])
-            date = input("场次序号 =>").strip()
-            try:
-                date = int(date) - 1
-                if date not in [i for i in range(len(data["screen_list"]))]:
-                    self.error_handle("请输入正确序号")
-            except:
-                self.error_handle("请输入正确数字")
+            while True:
+                date = input("场次序号 =>").strip()
+                if not date:date="1"
+                try:
+                    date = int(date) - 1
+                    if date not in [i for i in range(len(data["screen_list"]))]:
+                        logger.error("请输入正确序号")
+                        continue
+                    break
+                except:
+                    logger.error("请输入正确数字")
             print("已选择：", data["screen_list"][date]["name"])
             print("\n请输入票种并按回车继续，格式例如 1")
             for i in range(len(data["screen_list"][date]["ticket_list"])):
                 print(str(i+1) + ":",data["screen_list"][date]["ticket_list"][i]["desc"],"-",data["screen_list"][date]["ticket_list"][i]["price"]//100,"RMB")
-            choice = input("票种序号 =>").strip()
-            try:
-                choice = int(choice) - 1
-                if choice not in [i for i in range(len(data["screen_list"][date]["ticket_list"]))]:
-                    self.error_handle("请输入正确序号")
-            except:
-                self.error_handle("请输入正确数字")
+            while True:
+                choice = input("票种序号 =>").strip()
+                try:
+                    choice = int(choice) - 1
+                    if choice not in [i for i in range(len(data["screen_list"][date]["ticket_list"]))]:
+                        logger.error("请输入正确序号")
+                        continue
+                    break
+                except:
+                    logger.error("请输入正确数字")
             self.selectedTicketInfo = data["name"] + " " + data["screen_list"][date]["name"] + " " + data["screen_list"][date]["ticket_list"][choice]["desc"]+ " " + str(data["screen_list"][date]["ticket_list"][choice]["price"]//100)+ " " +"RMB"
             logger.info("\n已选择："+str(self.selectedTicketInfo) )
             return data["screen_list"][date]["id"],data["screen_list"][date]["ticket_list"][choice]["id"],data["screen_list"][date]["ticket_list"][choice]["price"]
@@ -682,7 +693,11 @@ class Api:
             if self.tokenGet() == 0:
                 break
         # 购票
+        t=0
         while self.life:
+            if time.time()-t>300:
+                t=time.time()
+                self.orderCreate()
             # i = 1+i # 次数显示集成在抢票函数里了 节省输出 By FriendshipEnder 4/19
             if not self.jlmode:
                 self.randSleepTime() # sleep(self.sleepTime) 随机等待时间

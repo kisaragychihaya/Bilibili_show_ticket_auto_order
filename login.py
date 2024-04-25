@@ -5,7 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from time import sleep
 import logging
-logging.basicConfig(level=logging.INFO, format='%(name)s:%(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s-%(name)s:%(levelname)s - %(message)s',datefmt="%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)
 
 def deal_cookies(raw):
