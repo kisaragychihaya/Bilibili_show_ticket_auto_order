@@ -51,8 +51,6 @@ class Api:
         }
         self.sleepTime = sleepTime
         self.token = token
-        self.passby = True
-        self.jlmode = False
         self.start_time = time.time()
         self.user_data = {}
         self.user_data["specificID"] = specificID
@@ -208,13 +206,6 @@ class Api:
         for i in range(0, len(self.user_data["buyer"])):
             self.user_data["buyer"][i]["isBuyerInfoVerified"] = "true"
             self.user_data["buyer"][i]["isBuyerValid"] = "true"
-       
-        self.jlmode = bool(self.menu("GET_JL_MODE") == "1")
-        print("捡漏抢票方式", end=": ")
-        if self.jlmode:
-            print("打开")
-        else:
-            print("关闭")
         # self.user_data["buyer"] = data["data"]["list"]
         # print(self.user_data["buyer"])
         # exit()
@@ -430,12 +421,7 @@ class Api:
         elif data["errno"] == 100001:
             logger.info(timestr+": 获取频率过快或无票。")
         elif data["errno"] == 3: # 防止请慢一点的消息太多
-            if self.passby:
-                logger.info(timestr+": 冷却技能。。")
-                if self.jlmode: #稳健捡漏模式
-                    sleep(4.5)  #视网速情况自己改, 稍微小于5秒就行
-            elif self.jlmode:
-                logger.info(timestr+":》》》》前进4")
+            logger.info("慢一点")
         else:
             logger.warning(timestr+": 呃, 错误信息: ["+ str(data["errno"])+ "] "+str(data["msg"]), )
             # print(data)
@@ -633,12 +619,6 @@ class Api:
                 print(phone_private[:3]+ "*****"+ phone_private[-3:])
             p = input("收货地址序号 =>").strip()
             return p
-        elif mtype == "GET_JL_MODE":
-            print("请问是否开启 | 1:开启,适合开售几十分钟,几乎全部售罄的票,触发“请慢一点”时再延时,刚开售就启用极易风控;\n捡漏抢票方式 | 2:不开启, 适合刚开售就售罄的票, 易于风控, 建议调大sleep。")
-            n = input("=>").strip()
-            if not re.match(r"^\d{1,2}$",n):
-                self.error_handle("请输入正确的模式")
-            return n
 
     def sendNotification(self,msg):
         if self.token:
@@ -688,8 +668,8 @@ class Api:
         self.buyerinfo()
         # 获取购票token
         while True:
-            if not self.jlmode:
-                self.randSleepTime() # sleep(self.sleepTime) 随机等待时间
+            # if not self.jlmode:
+            #     self.randSleepTime() # sleep(self.sleepTime) 随机等待时间
             if self.tokenGet() == 0:
                 break
         # 购票
@@ -699,18 +679,19 @@ class Api:
                 t=time.time()
                 self.orderCreate()
             # i = 1+i # 次数显示集成在抢票函数里了 节省输出 By FriendshipEnder 4/19
-            if not self.jlmode:
-                self.randSleepTime() # sleep(self.sleepTime) 随机等待时间
+            # sleep(self.sleepTime) 随机等待时间
             # print("正在尝试第: %d次抢票"%i) 
             # if self.tokenGet():
                 # continue
             cond,msg=self.checkOrderAvalible()
             logger.info(msg)
             if cond:
-                if self.orderCreate():
+                for _ in range(10):
+                    if self.orderCreate():
+                        logger.info("完成任务，正在退出！！！")
                 # open("url","w").write("https://show.bilibili.com/orderlist")
-                    os.system("pause")
-                    break
+                        os.system("pause")
+                        return
 
     def test(self):
         self.load_cookie()
