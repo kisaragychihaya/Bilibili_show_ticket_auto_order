@@ -229,7 +229,23 @@ class Api:
             return 1
         n = int(self.menu("GET_ADDRESS_LIST",data["data"]))-1
         return data["data"]["addr_list"][n]
-        
+
+    def checkOrderAvalible(self):
+        url = "https://show.bilibili.com/api/ticket/project/get?version=134&id=" + self.user_data[
+            "project_id"] + "&project_id=" + self.user_data["project_id"]
+        data = self._http(url, True)
+        if "售罄"in data["data"]["sale_flag"]:
+            return False,data["data"]["sale_flag"]
+        else:
+            for screen in data["data"]["screen_list"]:
+                if screen["id"] == self.user_data["screen_id"]:
+                    for ticket in screen["ticket_list"]:
+                        if ticket["id"] == self.user_data["sku_id"]:
+                            if ticket["clickable"]:
+                                return True,"有票了，下单，启动！"
+                            else:
+                                return False,"你要的票暂时没有"
+
 
     def tokenGet(self):
         # 获取token
@@ -415,7 +431,7 @@ class Api:
             elif self.jlmode:
                 logger.info(timestr+": 稍等, 请慢一点? 我更不会了。全速开抢!")
         else:
-            logger.warning(timestr+": 呃, 错误信息: ["+ str(data["errno"])+ "]", data["msg"])
+            logger.warning(timestr+": 呃, 错误信息: ["+ str(data["errno"])+ "] "+str(data["msg"]), )
             # print(data)
         self.passby = (data["errno"] != 3)
         return 0
@@ -507,7 +523,7 @@ class Api:
             except:
                 self.error_handle("请输入正确数字")
             self.selectedTicketInfo = data["name"] + " " + data["screen_list"][date]["name"] + " " + data["screen_list"][date]["ticket_list"][choice]["desc"]+ " " + str(data["screen_list"][date]["ticket_list"][choice]["price"]//100)+ " " +"RMB"
-            logger.info("\n已选择：", self.selectedTicketInfo)
+            logger.info("\n已选择："+str(self.selectedTicketInfo) )
             return data["screen_list"][date]["id"],data["screen_list"][date]["ticket_list"][choice]["id"],data["screen_list"][date]["ticket_list"][choice]["price"]
         elif mtype == "GET_ID_INFO":
             if not data: # 获取用户信息时失败, 也许是登录cookie失败. 此操作同时删除失效的cookie
@@ -671,10 +687,13 @@ class Api:
             # print("正在尝试第: %d次抢票"%i) 
             # if self.tokenGet():
                 # continue
-            if self.orderCreate():
+            cond,msg=self.checkOrderAvalible()
+            logger.info(msg)
+            if cond:
+                if self.orderCreate():
                 # open("url","w").write("https://show.bilibili.com/orderlist")
-                os.system("pause")
-                break
+                    os.system("pause")
+                    break
 
     def test(self):
         self.load_cookie()
