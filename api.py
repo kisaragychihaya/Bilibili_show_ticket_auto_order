@@ -20,13 +20,14 @@ from geetest import dealCode
 from login import get_login
 from plyer import notification as trayNotify
 import pyperclip # 新增剪贴板功能 By FriendshipEnder 4/19
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Api:
     """
     API操作
     """
-    def __init__(self,proxies=None,specificID=None,sleepTime=0.15,token=None):
+    def __init__(self,proxies=None,specificID=None,sleepTime=0.15,token=None,headless=False):
         self.proxies=proxies
         self.specificID=specificID
         self.headers = {
@@ -59,6 +60,7 @@ class Api:
         self.user_data["token"] = ""
         self.appName = "BilibiliShow_AutoOrder"
         self.selectedTicketInfo = "未选择"
+        self.headless=headless
         # ALL_USER_DATA_LIST = [""]
 
     def load_cookie(self):
@@ -71,31 +73,18 @@ class Api:
                 j = json.load(r)
             except:
                 r.close()
-                print("用户文件损坏, 请重新登录一次bilibili。")
+                logger.warning("用户文件损坏, 请重新登录一次bilibili。")
                 rt = open("user_data.json","w")
                 rt.write("{}")
                 rt.close()
-                j = json.loads("{}")
+                j = dict()
             else:
                 r.close()
             if not len(j):
-                print("请先登录一次bilibili, 让我抢票姬可以和2233娘好好沟通一下下~")
-                get_login()
+                logger.info("请先登录一次bilibili, 让我抢票姬可以和2233娘好好沟通一下下~")
+                j=get_login(headless=self.headless)
                 r = open("user_data.json","r")
-                try:
-                    j = json.load(r)
-                except:
-                    r.close()
-                    t = open("user_data.json","w")
-                    t.write("{}")
-                    t.close()
-                    self.error_handle("登录失败")
-                else:
-                    r.close()
-                if len(j):
-                    self.error_handle("网页端未登录! 请重新启动并登录。")
-                else:
-                    print("B站登录成功。")
+                logger.info("B站登录成功。")
             if self.user_data["specificID"]:
                 self.user_data["username"],self.headers["Cookie"] = j[self.user_data["specificID"]][0],j[self.user_data["specificID"]][1]
             else:
@@ -120,20 +109,20 @@ class Api:
         #     print(e)
         #     self.error_handle("ip可能被风控。请求地址: " + url)
             if e.code == 429:
-                print("请求有点太快, 或许是抢票姬触发蜀黍设定的风控咯! 稍后重试...")
+                logger.warning("请求有点太快, 或许是抢票姬触发蜀黍设定的风控咯! 稍后重试...")
                 self.randSleepTime()
             elif e.code == 412:
                 self.error_handle("请求太太太太快, 请半小时后重试...(或者你换个IP再接着抢) 抢票姬就先告辞了~~")
             elif e.code == 504:
-                print("网关忙不过来, 超时了, 2秒后重试...")
+                logger.warning("网关忙不过来, 超时了, 2秒后重试...")
                 sleep(2)
             else:
-                print("HTTP请求响应 {} 错误! 5秒后重试...".format(e.code))
+                logger.warning("HTTP请求响应 {} 错误! 5秒后重试...".format(e.code))
                 sleep(5)
             return {"code":999999999,"errno":e.code,"msg":"HTTP返回代码异常"}
         # print(res)
         if res.code != 200:
-            print("抢票姬的IP地址可能被风控咯，都是蜀黍干的好事!!\n可以换个WiFi或热点试试. 请求地址: " + url)
+            logger.error("抢票姬的IP地址可能被风控咯，都是蜀黍干的好事!!\n可以换个WiFi或热点试试. 请求地址: " + url)
             sleep(5)
             return {"code":999999999,"errno":res.code,"msg":"触发风控"}
         if j:
@@ -235,7 +224,7 @@ class Api:
         if(len(data["data"]["addr_list"])<=0):
             self.error_handle("请先前往会员购地址管理添加收货地址, 你要让老姐电报到你家吗?~")
         if data["errno"] != 0:
-            print("[会员购地址管理] 失败信息: " + data["msg"])
+            logger.error("[会员购地址管理] 失败信息: " + data["msg"])
             return 1
         n = int(self.menu("GET_ADDRESS_LIST",data["data"]))-1
         return data["data"]["addr_list"][n]
@@ -279,7 +268,7 @@ class Api:
             gt = _data["data"]["geetest"]["gt"]
             challenge = _data["data"]["geetest"]["challenge"]
             token = _data["data"]["token"]
-            print("大人, 请“验证”, 老姐是机器人过不了验证~ (失败请退出重新运行脚本)：")
+            logger.warning("大人, 请“验证”, 老姐是机器人过不了验证~ (失败请退出重新运行脚本)：")
             self.tray_notify("验证码","大人, 该过验证码啦！老姐是机器人过不了验证~","./ico/info.ico", timeout=10)
             with open("url","w") as f:
                 f.write("file://"+ os.path.abspath('.') + "/geetest-validator/index.html?gt=" + gt + "&challenge=" + challenge)
@@ -302,7 +291,7 @@ class Api:
             if(_data["code"]==-111):
                 self.error_handle("csrf校验失败")
             elif _data["code"] == 0:
-                print("[极验GeeTest认证] 老姐成功啦, 继续充满活力的帮你抢票咯。")
+                logger.info("[极验GeeTest认证] 老姐成功啦, 继续充满活力的帮你抢票咯。")
                 return 0
             elif _data["code"]==100001:
                 self.error_handle("验证码校验失败。")
@@ -311,7 +300,7 @@ class Api:
         else:
             if not data["data"]:
                 timestr = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())) + ": "
-                print("{}失败信息[{}]: {}".format(timestr,data["code"],data["msg"]))
+                logger.error("{}失败信息[{}]: {}".format(timestr,data["code"],data["msg"]))
                 return 1
             if data["data"]["token"]:
                 self.user_data["token"] = data["data"]["token"]
@@ -386,7 +375,7 @@ class Api:
         data = self._http(url,True,urlencode(payload).replace("%27true%27","true").replace("%27","%22"))
         if data["errno"] == 0:
             if self.checkOrder(data["data"]["token"],data["data"]["orderId"]): # 发现票之后快速立即检查 打印字符串的机会都不要留
-                print(timestr+": 老姐成功发现一张票! 立即尝试抢票!\n老姐成功把票弄到手, 请在10分钟内完成支付.实际成交时间:"+timestr)
+                logger.info(timestr+": 老姐成功发现一张票! 立即尝试抢票!\n老姐成功把票弄到手, 请在10分钟内完成支付.实际成交时间:"+timestr)
                 trayNotifyMessage = timestr+"老姐成功把票弄到手, 请在10分钟内完成支付" + "\n" + "购票人："
                 # + thisBuyerInfo + self.selectedTicketInfo + "\n"
                 # Add buyer info
@@ -406,33 +395,33 @@ class Api:
                 # self.sendNotification(trayNotifyMessage)
                 return 1
             else:
-                print(timestr+": 糟糕，老姐成功发现了一张假票(同时锁定一张票，但被其他人抢走了)\n老姐立即重新抢nya~")
+                logger.warning(timestr+": 糟糕，老姐成功发现了一张假票(同时锁定一张票，但被其他人抢走了)\n老姐立即重新抢nya~")
                 # self.tray_notify("抢票失败", "糟糕，是张假票(同时锁定一张票，但被其他人抢走了)\n老姐立即重新抢nya~", "./ico/failed.ico", timeout=8)
         elif data["errno"] == 209002: # 统一格式  By FriendshipEnder 4/19
-            print(timestr+": 嗯, 未获取到购买人信息")
+            logger.warning(timestr+": 嗯, 未获取到购买人信息")
         elif "10005" in str(data["errno"]):    # Token过期
-            print(timestr+": 嗯, Token已过期! 正在重新获取!")
+            logger.warning(timestr+": 嗯, Token已过期! 正在重新获取!")
             self.tokenGet()
         elif data["errno"] == 100009:
-            print(timestr+": 唉, 现在暂无余票，请耐心等候。")
+            logger.info(timestr+": 唉, 现在暂无余票，请耐心等候。")
         elif data["errno"] == 100001:
-            print(timestr+": 嘶, 获取频率过快或无票。")
+            logger.info(timestr+": 嘶, 获取频率过快或无票。")
         elif data["errno"] == 3: # 防止请慢一点的消息太多
             if self.passby:
-                print(timestr+": 稍等, 请慢一点? 我偏不。")
+                logger.info(timestr+": 稍等, 请慢一点? 我偏不。")
                 if self.jlmode: #稳健捡漏模式
                     sleep(4.5)  #视网速情况自己改, 稍微小于5秒就行
             elif self.jlmode:
-                print(timestr+": 稍等, 请慢一点? 我更不会了。全速开抢!")
+                logger.info(timestr+": 稍等, 请慢一点? 我更不会了。全速开抢!")
         else:
-            print(timestr+": 呃, 错误信息: ["+ str(data["errno"])+ "]", data["msg"])
+            logger.warning(timestr+": 呃, 错误信息: ["+ str(data["errno"])+ "]", data["msg"])
             # print(data)
         self.passby = (data["errno"] != 3)
         return 0
 
     def checkOrder(self,_token,_orderId):
         timestr = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))+":"
-        print(timestr+"啊哈! 老姐帮下单成功！正在检查票务状态...请稍等")
+        logger.info(timestr+"啊哈! 老姐帮下单成功！正在检查票务状态...请稍等")
         # sleep(5)
         # url = "https://show.bilibili.com/api/ticket/order/list?page=0&page_size=10"
         # data = self._http(url,True)
@@ -451,9 +440,9 @@ class Api:
         if(data["errno"] == 0):
             self.tray_notify("抢票成功", "啊哈! 抢票姬帮你下单成功！快去支付吧~", "./ico/success.ico", timeout=600)
             _qrcode = data["data"]["payParam"]["code_url"]
-            print("请使用微信/QQ/支付宝扫描二维码完成支付")
-            print("请使用微信/QQ/支付宝扫描二维码完成支付")
-            print("请使用微信/QQ/支付宝扫描二维码完成支付")
+            logger.warning("请使用微信/QQ/支付宝扫描二维码完成支付")
+            logger.warning("请使用微信/QQ/支付宝扫描二维码完成支付")
+            logger.warning("请使用微信/QQ/支付宝扫描二维码完成支付")
             qr_gen = qrcode.QRCode()
             qr_gen.add_data(_qrcode)
             qr_gen.print_ascii()
@@ -463,16 +452,29 @@ class Api:
             return 0
 
     def error_handle(self,msg):
-        print(msg)
+        logger.error(msg)
         os.system("pause")
         sys.exit(0)
 
     def menu(self,mtype,data=None):
         if mtype == "GET_SHOW":
-            i = input("快点给我购票链接并按回车继续! 抢票姬要帮你抢票啦! 范例https://show.bilibili.com/platform/detail.html?id=73711\n=>").strip()
-            if "bilibili" not in i or "id" not in i:
-                self.error_handle("网址格式错误")
-            return i
+            while True:
+                items_uri = ""
+                if os.path.isfile(".url"):
+                    with open(".url", mode="r", encoding="utf-8") as f:
+                        items_uri = f.read().strip()
+                        i = input(
+                            "快点给我购票链接并按回车继续! 留空使用上次配置! 范例https://show.bilibili.com/platform/detail.html?id=73711\n=>").strip()
+                        i = i or items_uri
+                else:
+                    i = input(
+                        "快点给我购票链接并按回车继续! 抢票姬要帮你抢票啦! 范例https://show.bilibili.com/platform/detail.html?id=73711\n=>").strip()
+                if "bilibili" not in i or "id" not in i:
+                    logger.error("网址格式错误")
+                else:
+                    with open(".url", mode="w", encoding="utf-8") as f:
+                        f.write(i)
+                    return i
         elif mtype == "GET_ORDER_IF":
             print("\n演出名称: " + data["name"])
             print("票务状态: " + data["sale_flag"])
@@ -502,7 +504,7 @@ class Api:
             except:
                 self.error_handle("请输入正确数字")
             self.selectedTicketInfo = data["name"] + " " + data["screen_list"][date]["name"] + " " + data["screen_list"][date]["ticket_list"][choice]["desc"]+ " " + str(data["screen_list"][date]["ticket_list"][choice]["price"]//100)+ " " +"RMB"
-            print("\n已选择：", self.selectedTicketInfo)
+            logger.info("\n已选择：", self.selectedTicketInfo)
             return data["screen_list"][date]["id"],data["screen_list"][date]["ticket_list"][choice]["id"],data["screen_list"][date]["ticket_list"][choice]["price"]
         elif mtype == "GET_ID_INFO":
             if not data: # 获取用户信息时失败, 也许是登录cookie失败. 此操作同时删除失效的cookie
@@ -511,7 +513,7 @@ class Api:
                 t.close()
                 self.error_handle("用户信息为空，可能是Cookie失效，请登录或上传身份信息后重试")
             if self.user_data["auth_type"] == 1:
-                print("\n此演出为一单一证，只需选择1个购票人，如 1")
+                logger.info("\n此演出为一单一证，只需选择1个购票人，如 1")
                 if len(data["list"]) <= 0:
                     self.error_handle("你的账号里一个购票人信息都没填写哦，请前往哔哩哔哩客户端-会员购-个人中心-购票人信息提前填写购票人信息")
                 for i in range(len(data["list"])):
@@ -576,7 +578,7 @@ class Api:
                     except:
                         self.error_handle("请输入正确序号")
         elif mtype == "GET_NORMAL_INFO":
-            print("\n此演出无需身份电话信息，请填写姓名和联系方式后按回车")
+            logger.info("\n此演出无需身份电话信息，请填写姓名和联系方式后按回车")
             name = input("姓名 =>").strip()
             tel = input("电话 =>").strip()
             if not re.match(r"^\d{9,14}$",tel):
@@ -584,13 +586,13 @@ class Api:
             return name, tel
 
         elif mtype == "GET_T_COUNT":
-            print("\n请输入购买数量")
+            logger.info("\n请输入购买数量")
             n = input("=>").strip()
             if not re.match(r"^\d{1,2}$",n):
                 self.error_handle("请输入正确的数量")
             return n
         elif mtype == "GET_ADDRESS_LIST":
-            print("\n请选择实体票发货地址(仅单地址)")
+            logger.info("\n请选择实体票发货地址(仅单地址)")
             for i in range(len(data["addr_list"])):
                 print(str(i+1) + ":" , data["addr_list"][i]["prov"]+data["addr_list"][i]["city"]+data["addr_list"][i]["area"]+data["addr_list"][i]["addr"], end=" ")
                 name_private = str(data["addr_list"][i]["name"]) # 隐私保护  By FriendshipEnder 4/19

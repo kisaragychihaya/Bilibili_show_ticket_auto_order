@@ -16,7 +16,13 @@ sleep = eval(a[2].split("=")[1].strip())
 token = None if a[3].split("=")[1].strip() == "None" else a[3].split("=")[1].strip()
 
 if __name__ == '__main__':
+	import argparse
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--headless", action="store_true",
+						help="run in headless mode")
+	args = parser.parse_args()
 	if not os.path.exists("url"):
 		with open("url","w") as f:
 			f.write("")
-	Api(proxies=proxies,specificID=specificID,sleepTime=sleep,token=token).start()
+	Api(proxies=proxies,specificID=specificID,sleepTime=sleep,token=token,headless=args.headless).start()
