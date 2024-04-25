@@ -21,6 +21,7 @@ from login import get_login
 from plyer import notification as trayNotify
 import pyperclip # 新增剪贴板功能 By FriendshipEnder 4/19
 import logging
+logging.basicConfig(level=logging.INFO, format='%(name)s:%(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class Api:
@@ -463,12 +464,14 @@ class Api:
                 if os.path.isfile(".url"):
                     with open(".url", mode="r", encoding="utf-8") as f:
                         items_uri = f.read().strip()
+                        print("快点给我购票链接并按回车继续! 留空使用上次配置!")
                         i = input(
-                            "快点给我购票链接并按回车继续! 留空使用上次配置! 范例https://show.bilibili.com/platform/detail.html?id=73711\n=>").strip()
+                            "范例https://show.bilibili.com/platform/detail.html?id=73711\n=>").strip()
                         i = i or items_uri
                 else:
+                    print("快点给我购票链接并按回车继续!抢票姬要帮你抢票啦! ")
                     i = input(
-                        "快点给我购票链接并按回车继续! 抢票姬要帮你抢票啦! 范例https://show.bilibili.com/platform/detail.html?id=73711\n=>").strip()
+                        "范例https://show.bilibili.com/platform/detail.html?id=73711\n=>").strip()
                 if "bilibili" not in i or "id" not in i:
                     logger.error("网址格式错误")
                 else:
@@ -634,12 +637,13 @@ class Api:
         if self.sleepTime >= 0.01:
             sleep(randint(int(self.sleepTime*750),int(self.sleepTime*1250))/1000.0)
     def start(self):
-        print("欢迎使用抢票娘 (Bilibili_show_ticket_auto_order) 版本1.8.3  只能抢B站会员购的票票哦~")
-        print("是由 fengx1a0、Just-Prog 等大佬编写, 由 FriendshipEnder(CN小影) 精心优化修改后的版本")
-        print("!!!!!老娘完全免费开源! 切勿外传、切勿用于商业用途、切勿落入黄牛(nmsl)和要价999的司马zian**之手!!!!!")
-        print("有问题去 https://github.com/fsender/Bilibili_show_ticket_auto_order 提issue 点star。")
-        print("关于登录信息: 我拿命保证我不会拿你们的cookie干坏事, 请放心登录, 如需取消登录请手动删除user_data.json")
-        print("关于抢票速度和风控: 推荐0.1秒,太快易风控,太慢抢不到. 请打开config.txt, 找到 sleep 更改后面的数字。")
+        logger.info("欢迎使用抢票娘 (Bilibili_show_ticket_auto_order) 版本1.8.3  只能抢B站会员购的票票哦~")
+        logger.info("是由 fengx1a0、Just-Prog 等大佬编写, 由 FriendshipEnder(CN小影) 精心优化修改后的版本")
+        logger.info("!!!!!老娘完全免费开源! 切勿外传、切勿用于商业用途、造成黄牛(nmsl)和要价999的司马zian**暴毙概不负责!!!!!")
+        logger.info("有问题去 https://github.com/fsender/Bilibili_show_ticket_auto_order 提issue 点star。")
+        print("-----------------------------------------------------------------------------------------")
+        logger.info("关于登录信息: 我拿命保证我不会拿你们的cookie干坏事, 请放心登录, 如需取消登录请手动删除user_data.json")
+        logger.info("关于抢票速度和风控: 推荐0.1秒,太快易风控,太慢抢不到. 请打开config.txt, 找到 sleep 更改后面的数字。")
         # 加载登录信息
         self.load_cookie()
         # 加载演出信息
