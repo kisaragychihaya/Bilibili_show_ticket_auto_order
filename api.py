@@ -30,6 +30,7 @@ class Api:
     """
     def __init__(self,proxies=None,specificID=None,sleepTime=0.15,token=None,headless=False):
         self.proxies=proxies
+        self.life=True
         self.specificID=specificID
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.1.4.514 Safari/537.36",
@@ -223,7 +224,7 @@ class Api:
         url = "https://show.bilibili.com/api/ticket/addr/list"
         data = self._http(url,True)
         if(len(data["data"]["addr_list"])<=0):
-            self.error_handle("请先前往会员购地址管理添加收货地址, 你要让老姐电报到你家吗?~")
+            self.error_handle("请先前往会员购地址管理添加收货地址：")
         if data["errno"] != 0:
             logger.error("[会员购地址管理] 失败信息: " + data["msg"])
             return 1
@@ -231,6 +232,7 @@ class Api:
         return data["data"]["addr_list"][n]
 
     def checkOrderAvalible(self):
+        #### ZianTT调用此业务逻辑造成的冚家欢乐，本人概不负责
         url = "https://show.bilibili.com/api/ticket/project/get?version=134&id=" + self.user_data[
             "project_id"] + "&project_id=" + self.user_data["project_id"]
         data = self._http(url, True)
@@ -285,8 +287,8 @@ class Api:
             gt = _data["data"]["geetest"]["gt"]
             challenge = _data["data"]["geetest"]["challenge"]
             token = _data["data"]["token"]
-            logger.warning("大人, 请“验证”, 老姐是机器人过不了验证~ (失败请退出重新运行脚本)：")
-            self.tray_notify("验证码","大人, 该过验证码啦！老姐是机器人过不了验证~","./ico/info.ico", timeout=10)
+            logger.warning("请在自动打开的浏览器里过验证")
+            self.tray_notify("验证码","大人, 该过验证码啦！在自动打开的浏览器窗口里","./ico/info.ico", timeout=10)
             with open("url","w") as f:
                 f.write("file://"+ os.path.abspath('.') + "/geetest-validator/index.html?gt=" + gt + "&challenge=" + challenge)
                 f.close()
@@ -308,7 +310,7 @@ class Api:
             if(_data["code"]==-111):
                 self.error_handle("csrf校验失败")
             elif _data["code"] == 0:
-                logger.info("[极验GeeTest认证] 老姐成功啦, 继续充满活力的帮你抢票咯。")
+                logger.info("[极验GeeTest认证] 继续执行")
                 return 0
             elif _data["code"]==100001:
                 self.error_handle("验证码校验失败。")
@@ -392,8 +394,8 @@ class Api:
         data = self._http(url,True,urlencode(payload).replace("%27true%27","true").replace("%27","%22"))
         if data["errno"] == 0:
             if self.checkOrder(data["data"]["token"],data["data"]["orderId"]): # 发现票之后快速立即检查 打印字符串的机会都不要留
-                logger.info(timestr+": 老姐成功发现一张票! 立即尝试抢票!\n老姐成功把票弄到手, 请在10分钟内完成支付.实际成交时间:"+timestr)
-                trayNotifyMessage = timestr+"老姐成功把票弄到手, 请在10分钟内完成支付" + "\n" + "购票人："
+                logger.info(timestr+": 成功发现一张票! 立即尝试抢票!\n成功把票弄到手, 请在10分钟内完成支付.实际成交时间:"+timestr)
+                trayNotifyMessage = timestr+"成功把票弄到手, 请在10分钟内完成支付" + "\n" + "购票人："
                 # + thisBuyerInfo + self.selectedTicketInfo + "\n"
                 # Add buyer info
                 if "buyer_info" in payload:
@@ -412,24 +414,24 @@ class Api:
                 # self.sendNotification(trayNotifyMessage)
                 return 1
             else:
-                logger.warning(timestr+": 糟糕，老姐成功发现了一张假票(同时锁定一张票，但被其他人抢走了)\n老姐立即重新抢nya~")
+                logger.warning(timestr+": 糟糕，是假票(同时锁定一张票，但被其他人抢走了)\n 继续")
                 # self.tray_notify("抢票失败", "糟糕，是张假票(同时锁定一张票，但被其他人抢走了)\n老姐立即重新抢nya~", "./ico/failed.ico", timeout=8)
         elif data["errno"] == 209002: # 统一格式  By FriendshipEnder 4/19
-            logger.warning(timestr+": 嗯, 未获取到购买人信息")
+            logger.warning(timestr+": 未获取到购买人信息")
         elif "10005" in str(data["errno"]):    # Token过期
-            logger.warning(timestr+": 嗯, Token已过期! 正在重新获取!")
+            logger.warning(timestr+": 哦哟, Token已过期! 正在重新获取!")
             self.tokenGet()
         elif data["errno"] == 100009:
-            logger.info(timestr+": 唉, 现在暂无余票，请耐心等候。")
+            logger.info(timestr+":  现在暂无余票，请耐心等候。")
         elif data["errno"] == 100001:
-            logger.info(timestr+": 嘶, 获取频率过快或无票。")
+            logger.info(timestr+": 获取频率过快或无票。")
         elif data["errno"] == 3: # 防止请慢一点的消息太多
             if self.passby:
-                logger.info(timestr+": 稍等, 请慢一点? 我偏不。")
+                logger.info(timestr+": 冷却技能。。")
                 if self.jlmode: #稳健捡漏模式
                     sleep(4.5)  #视网速情况自己改, 稍微小于5秒就行
             elif self.jlmode:
-                logger.info(timestr+": 稍等, 请慢一点? 我更不会了。全速开抢!")
+                logger.info(timestr+":》》》》前进4")
         else:
             logger.warning(timestr+": 呃, 错误信息: ["+ str(data["errno"])+ "] "+str(data["msg"]), )
             # print(data)
@@ -438,7 +440,7 @@ class Api:
 
     def checkOrder(self,_token,_orderId):
         timestr = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))+":"
-        logger.info(timestr+"啊哈! 老姐帮下单成功！正在检查票务状态...请稍等")
+        logger.info(timestr+"下单成功！正在检查票务状态...请稍等")
         # sleep(5)
         # url = "https://show.bilibili.com/api/ticket/order/list?page=0&page_size=10"
         # data = self._http(url,True)
@@ -654,11 +656,11 @@ class Api:
             sleep(randint(int(self.sleepTime*750),int(self.sleepTime*1250))/1000.0)
     def start(self):
         logger.info("欢迎使用抢票娘 (Bilibili_show_ticket_auto_order) 版本1.8.3  只能抢B站会员购的票票哦~")
-        logger.info("是由 fengx1a0、Just-Prog 等大佬编写, 由 FriendshipEnder(CN小影) 精心优化修改后的版本")
+        logger.info("是由 fengx1a0、Just-Prog 等大佬编写, 由 FriendshipEnder(CN小影)，河童重工 精心优化修改后的版本")
         logger.info("!!!!!老娘完全免费开源! 切勿外传、切勿用于商业用途、造成黄牛(nmsl)和要价999的司马zian**暴毙概不负责!!!!!")
         logger.info("有问题去 https://github.com/fsender/Bilibili_show_ticket_auto_order 提issue 点star。")
         print("-----------------------------------------------------------------------------------------")
-        logger.info("关于登录信息: 我拿命保证我不会拿你们的cookie干坏事, 请放心登录, 如需取消登录请手动删除user_data.json")
+        logger.info("关于登录信息: 我拿命保证我不会拿你们的cookie干坏事, 开源代码可以审计，请放心登录, 如需取消登录请手动删除user_data.json")
         logger.info("关于抢票速度和风控: 推荐0.1秒,太快易风控,太慢抢不到. 请打开config.txt, 找到 sleep 更改后面的数字。")
         # 加载登录信息
         self.load_cookie()
@@ -680,7 +682,7 @@ class Api:
             if self.tokenGet() == 0:
                 break
         # 购票
-        while True:
+        while self.life:
             # i = 1+i # 次数显示集成在抢票函数里了 节省输出 By FriendshipEnder 4/19
             if not self.jlmode:
                 self.randSleepTime() # sleep(self.sleepTime) 随机等待时间

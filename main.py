@@ -25,4 +25,9 @@ if __name__ == '__main__':
 	if not os.path.exists("url"):
 		with open("url","w") as f:
 			f.write("")
-	Api(proxies=proxies,specificID=specificID,sleepTime=sleep,token=token,headless=args.headless).start()
+	api=Api(proxies=proxies,specificID=specificID,sleepTime=sleep,token=token,headless=args.headless)
+	try:
+		api.start()
+	except KeyboardInterrupt:
+		api.life=False
+		print("退出")
