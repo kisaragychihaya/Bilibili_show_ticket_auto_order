@@ -10,7 +10,7 @@ import json
 import sys
 import http.cookies
 import qrcode
-from random import randint # 随机延迟时间
+from CONST import HEADER
 from time import sleep
 from urllib import request
 from urllib.request import Request as Reqtype
@@ -23,7 +23,7 @@ import pyperclip # 新增剪贴板功能 By FriendshipEnder 4/19
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s-%(name)s:%(levelname)s - %(message)s',datefmt="%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)
-
+from multiprocessing import Process
 class Api:
     """
     API操作
@@ -32,36 +32,38 @@ class Api:
         self.proxies=proxies
         self.life=True
         self.specificID=specificID
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.1.4.514 Safari/537.36",
-            "Referer":"https://mall.bilibili.com/",
-            "Origin":"https://mall.bilibili.com/",
-            "Pregma":"no-cache",
-            "Cache-Control":"max-age=0",
-            "Upgrade-Insecure-Requests":"1",
-            "Sec-Fetch-Site":"none",
-            "Sec-Fetch-Mode":"navigate",
-            "Sec-Fetch-User":"?1",
-            "Sec-Fetch-Dest":"document",
-            "Cookie":"a=b;",
-            "Accept": "*/*",
-            "Accept-Language": "zh-CN,zh;q=0.9",
-            "Accept-Encoding": "",
-            "Connection": "keep-alive"
-        }
-        self.sleepTime = sleepTime
+        self.headers = HEADER
         self.token = token
         self.start_time = time.time()
         self.user_data = {}
         self.user_data["specificID"] = specificID
         self.user_data["username"] = ""
         self.user_data["project_id"] = ""
-        # self.user_data["deliver_info"] = ""
         self.user_data["token"] = ""
         self.appName = "BilibiliShow_AutoOrder"
         self.selectedTicketInfo = "未选择"
         self.headless=headless
-        # ALL_USER_DATA_LIST = [""]
+        self._on_succeed_order_hooks=[]
+        self._before_login_hooks=[]
+        self._on_captcha_hooks=[]
+
+
+    def hook_add(self,hook_name=None,hook=None):
+        if hook_name and hook:
+            if callable(hook):
+                getattr(self,"_"+hook_name+"_hook").append(hook)
+                return
+        logger.info("on_succeed_order,before_login,on_captcha")
+    def _run_hook(self,hooks,msg):
+        pp=[]
+        if hooks:
+            for hook in hooks:
+                if callable(hook):
+                    pp.append(Process(target=hook,args=(msg,)))
+                else:
+                    logger.error("hook必须可调用")
+            for p in pp:
+                p.start()
 
     def load_cookie(self):
         if not os.path.exists("user_data.json"):
@@ -200,8 +202,7 @@ class Api:
         data = self._http(url,True)
 
         self.user_data["buyer"] = self.menu("GET_ID_INFO", data["data"])
-        # print(self.user_data["buyer"])
-        # exit(0)
+
         if self.user_data["auth_type"] == 2:
             self.user_data["user_count"] = len(self.user_data["buyer"])
         else:
@@ -210,10 +211,6 @@ class Api:
         for i in range(0, len(self.user_data["buyer"])):
             self.user_data["buyer"][i]["isBuyerInfoVerified"] = "true"
             self.user_data["buyer"][i]["isBuyerValid"] = "true"
-        # self.user_data["buyer"] = data["data"]["list"]
-        # print(self.user_data["buyer"])
-        # exit()
-        # print("购票人信息获取成功")
 
     def addressInfo(self):
         url = "https://show.bilibili.com/api/ticket/addr/list"
@@ -251,30 +248,7 @@ class Api:
 
         payload = "count=" + str(self.user_data["user_count"]) + "&order_type=1&project_id=" + self.user_data["project_id"] + "&screen_id=" + str(self.user_data["screen_id"]) + "&sku_id=" + str(self.user_data["sku_id"]) + "&token=" + "&newRisk=true"
         # payload = "count=1&order_type=1&project_id=73710&screen_id=134762&sku_id=398405&token="       
-        
 
-        
-        # R.I.P. 旧滑块验证
-
-        # if not data["data"]:
-        #     # self.error_handle("获取token失败")
-        #     timestr = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())) + ": "
-        #     print(timestr+"失败信息: " + data["msg"])
-        #     return 1
-        # if data["data"]["shield"]["verifyMethod"]:
-        #     with open("url","w") as f:
-        #         print("需要验证，正在拉取验证码")
-        #         f.write(data["data"]["shield"]["naUrl"])
-        #     if self.token:
-        #         self.end_time = time.time()
-        #         if self.end_time - self.start_time > 60:
-        #             print(self.end_time - self.start_time)
-        #             self.sendNotification("该拉滑块验证码啦！")
-        #             self.start_time = self.end_time            
-        # self.user_data["token"] = data["data"]["token"]
-        # # print(data)
-        # # print(self.user_data["user_count"])
-        # print("\n购买Token获取成功")
         while True:
             data = self._http(url, True, payload)
             if data["errno"] == -401:
@@ -326,8 +300,6 @@ class Api:
             return 0
 
     def orderCreate(self):
-        # 创建订单
-        # url = "https://show.bilibili.com/api/ticket/order/createV2?project_id=" + config["projectId"]
         url = "https://show.bilibili.com/api/ticket/order/createV2?project_id=" + self.user_data["project_id"]
 
         try:
@@ -438,19 +410,6 @@ class Api:
     def checkOrder(self,_token,_orderId):
         timestr = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))+":"
         logger.info(timestr+"下单成功！正在检查票务状态...请稍等")
-        # sleep(5)
-        # url = "https://show.bilibili.com/api/ticket/order/list?page=0&page_size=10"
-        # data = self._http(url,True)
-        # # print(data)
-        # if data["errno"] != 0:
-        #     print("检测到网络波动，正在重新检查...")
-        #     return self.checkOrder()
-        # elif not data["data"]["list"]:
-        #     return 0
-        # elif data['data']['list'][0]['status'] == 1:
-        #     return 1
-        # else:
-        #     return 0
         url = "https://show.bilibili.com/api/ticket/order/createstatus?token="+_token+"&timestamp="+str(int(round(time.time() * 1000)))+"&project_id="+self.user_data["project_id"]+"&orderId="+str(_orderId)
         data = self._http(url,True)
         if(data["errno"] == 0):
@@ -462,7 +421,7 @@ class Api:
             qr_gen = qrcode.QRCode()
             qr_gen.add_data(_qrcode)
             qr_gen.print_ascii()
-            # print(qrcode)
+            self._run_hook(self._on_succeed_order_hooks,_qrcode)
             return 1
         else:
             return 0
@@ -649,9 +608,6 @@ class Api:
         )
         self.sendNotification(msg)
 
-    def randSleepTime(self): # 随机时间戳
-        if self.sleepTime >= 0.01:
-            sleep(randint(int(self.sleepTime*750),int(self.sleepTime*1250))/1000.0)
     def start(self):
         logger.info("欢迎使用抢票娘 (Bilibili_show_ticket_auto_order) 版本1.8.3  只能抢B站会员购的票票哦~")
         logger.info("是由 fengx1a0、Just-Prog 等大佬编写, 由 FriendshipEnder(CN小影)，河童重工 精心优化修改后的版本")
@@ -664,19 +620,10 @@ class Api:
         self.load_cookie()
         # 加载演出信息
         self.orderInfo()
-        # while True:
-            # try:
-                # sleep(1.7)
-                # if not self.orderInfo():
-                    # break
-            # except Exception as e:
-            #     pass
         # 加载购买人信息
         self.buyerinfo()
         # 获取购票token
         while True:
-            # if not self.jlmode:
-            #     self.randSleepTime() # sleep(self.sleepTime) 随机等待时间
             if self.tokenGet() == 0:
                 break
         # 购票
@@ -685,11 +632,7 @@ class Api:
             if time.time()-t>10:
                 t=time.time()
                 self.tokenGet()
-            # i = 1+i # 次数显示集成在抢票函数里了 节省输出 By FriendshipEnder 4/19
-            # sleep(self.sleepTime) 随机等待时间
-            # print("正在尝试第: %d次抢票"%i) 
-            # if self.tokenGet():
-                # continue
+
             cond,msg=self.checkOrderAvalible()
             logger.info(msg)
             if cond:
@@ -701,9 +644,6 @@ class Api:
                         os.system("pause")
                         exit()
 
-    def test(self):
-        self.load_cookie()
-        self.checkOrder()
 
 
 if __name__ == '__main__':
